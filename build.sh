@@ -31,9 +31,6 @@ WARNINGS=""
 # Create build directory if it doesn't exist.
 mkdir -p $BUILD_DIR
 
-# PCH_OUTPUT="$BUILD_DIR/common_header.pch"
-# PCH_HEADER="include/common/common_header.hpp"
-
 SOURCES="$(find src/ -name '*.cpp')"
 
 FIRST_ARGS="$COMPILER $TARGET $DEBUG_FLAGS $OPTIM_FLAGS $COMPILER_FLAGS $RUNTIME_FLAGS $INCLUDES $WARNINGS"

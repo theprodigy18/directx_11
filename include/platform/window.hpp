@@ -2,8 +2,10 @@
 
 #include "utils/drop_exception.hpp"
 #include "input/keyboard.hpp"
+#include "input/mouse.hpp"
 
 #include <Windows.h>
+#include <optional>
 
 namespace drop::platform
 {
@@ -48,7 +50,11 @@ namespace drop::platform
         Window(const Window&)            = delete; // Copy Constructor.
         Window& operator=(const Window&) = delete; // Copy Assignment Operator.
 
+        void                      SetTitle(const char* title);
+        static std::optional<i32> ProcessMessages();
+
         input::Keyboard keyboard;
+        input::Mouse    mouse;
 
     private:
         static LRESULT CALLBACK HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;

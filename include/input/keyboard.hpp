@@ -6,7 +6,7 @@
 namespace drop::platform
 {
     class Window;
-}
+} // namespace drop::platform
 
 namespace drop::input
 {
@@ -27,8 +27,8 @@ namespace drop::input
             };
 
         private:
-            Type _type;
-            u8   _keyCode;
+            Type _type {Type::INVALID};
+            u8   _keyCode {0};
 
         public:
             Event() noexcept

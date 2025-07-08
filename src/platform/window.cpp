@@ -1,5 +1,5 @@
 #include "platform/window.hpp"
-#include "utils/resource.h"
+#include "utils/resource.hpp"
 
 #include <sstream>
 
@@ -59,13 +59,23 @@ namespace drop::platform
         {
             throw CHWND_LAST_EXCEPT();
         }
+        i32 normWidth {rc.right - rc.left};
+        i32 normHeight {rc.bottom - rc.top};
+
+        RECT dr {};
+        SystemParametersInfoW(SPI_GETWORKAREA, 0, &dr, 0);
+        i32 dw {dr.right - dr.left};
+        i32 dh {dr.bottom - dr.top};
+
+        i32 x {dr.left + (dw - normWidth) / 2};
+        i32 y {dr.top + (dh - normHeight) / 2};
 
         _hwnd = CreateWindowExA(
             0,
             WindowClass::GetName(), title,
             dwStyle,
-            CW_USEDEFAULT, CW_USEDEFAULT,
-            rc.right - rc.left, rc.bottom - rc.top,
+            x, y,
+            normWidth, normHeight,
             nullptr, nullptr,
             WindowClass::GetInstance(),
             this);
@@ -82,6 +92,31 @@ namespace drop::platform
     Window::~Window()
     {
         DestroyWindow(_hwnd);
+    }
+
+    void Window::SetTitle(const char* title)
+    {
+        if (!SetWindowTextA(_hwnd, title))
+        {
+            throw CHWND_LAST_EXCEPT();
+        }
+    }
+
+    std::optional<i32> Window::ProcessMessages()
+    {
+        MSG msg {};
+        while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            if (msg.message == WM_QUIT)
+            {
+                return msg.wParam;
+            }
+
+            TranslateMessage(&msg);
+            DispatchMessageA(&msg);
+        }
+
+        return {};
     }
 
     LRESULT CALLBACK Window::HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept
@@ -148,6 +183,65 @@ namespace drop::platform
         case WM_CHAR:
         {
             keyboard.OnChar(static_cast<u8>(wParam));
+            break;
+        }
+        case WM_MOUSEMOVE:
+        {
+            const POINTS pt {MAKEPOINTS(lParam)};
+            // First check if the mouse is in the window, then we can update the mouse position.
+            // In addition if before this message the mouse is not in the window, we can set the mouse in the window.
+            // And capture the mouse.
+            if (pt.x >= 0 && pt.x < _width && pt.y >= 0 && pt.y < _height)
+            {
+                mouse.OnMouseMove(pt.x, pt.y);
+                if (!mouse.IsInWindow())
+                {
+                    SetCapture(_hwnd);
+                    mouse.OnMouseEnter();
+                }
+            }
+            else // Not in the window. But we still need to check if the mouse are clicked/holding down.
+            {    // Therefore we still need to track the mouse position.
+                if (wParam & (MK_LBUTTON | MK_RBUTTON))
+                {
+                    mouse.OnMouseMove(pt.x, pt.y);
+                }
+                else // And therefore if the mouse is not clicked/holding down,
+                {    // we need to release the capture and trigger a leave event.
+                    ReleaseCapture();
+                    mouse.OnMouseLeave();
+                }
+            }
+            break;
+        }
+        case WM_LBUTTONDOWN:
+        {
+            const POINTS pt {MAKEPOINTS(lParam)};
+            mouse.OnLeftPressed(pt.x, pt.y);
+            break;
+        }
+        case WM_RBUTTONDOWN:
+        {
+            const POINTS pt {MAKEPOINTS(lParam)};
+            mouse.OnRightPressed(pt.x, pt.y);
+            break;
+        }
+        case WM_LBUTTONUP:
+        {
+            const POINTS pt {MAKEPOINTS(lParam)};
+            mouse.OnLeftReleased(pt.x, pt.y);
+            break;
+        }
+        case WM_RBUTTONUP:
+        {
+            const POINTS pt {MAKEPOINTS(lParam)};
+            mouse.OnRightReleased(pt.x, pt.y);
+            break;
+        }
+        case WM_MOUSEWHEEL:
+        {
+            const POINTS pt {MAKEPOINTS(lParam)};
+            mouse.OnWheelDelta(pt.x, pt.y, GET_WHEEL_DELTA_WPARAM(wParam));
             break;
         }
         default:
