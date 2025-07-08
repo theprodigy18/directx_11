@@ -1,0 +1,62 @@
+# Build directory
+/build/
+/out/
+/bin/
+/lib/
+
+.vs/
+.vscode/settings.json
+.clang-format
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+
+# VS-specific CMake integration
+CMakeUserPresets.json
+
+# VS project files (optional if you use them temporarily)
+*.sln
+*.vcxproj*
+*.user
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# Visual Studio backup/temp files
+*.ncb
+*.suo
+*.log
+*.tlog
+*.obj
+*.pch
+*.pdb
+*.ipch
+*.aps
+*.ilk
+*.idb
+
+# Debug/Release folders
+Debug/
+Release/
+x64/
+x86/
+
+# Generated executable or libs
+*.exe
+*.dll
+*.lib
+*.so
+*.a
+*.out
+
+# Clang-format/Clang-tidy backups
+*~ 
+*.orig
+
+# User-specific CMake presets or editor settings
+*.code-workspace
