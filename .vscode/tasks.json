@@ -22,6 +22,68 @@
                 "kind": "build",
                 "isDefault": false
             }
+        },
+        {
+            "label": "Build resources x64-debug",
+            "type": "shell",
+            "command": "sh build_resources.sh debug",
+            "problemMatcher": [],
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Build resources x64-release",
+            "type": "shell",
+            "command": "sh build_resources.sh release",
+            "problemMatcher": [],
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Build pch x64-debug",
+            "type": "shell",
+            "command": "sh build_pch.sh debug",
+            "problemMatcher": [],
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Build pch x64-release",
+            "type": "shell",
+            "command": "sh build_pch.sh release",
+            "problemMatcher": [],
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Compile Shader",
+            "type": "shell",
+            "command": "cmd.exe",
+            "args": [
+                "/c",
+                "compile_shader.bat"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+            },
+            "problemMatcher": []
         }
     ]
 }

@@ -86,7 +86,7 @@ namespace drop::platform
         }
 
         // Create graphics object.
-        _pGraphics = new graphics::Graphics(_hwnd);
+        _pGraphics = std::make_unique<graphics::Graphics>(_hwnd);
 
         ShowWindow(_hwnd, SW_SHOW);
         UpdateWindow(_hwnd);
@@ -94,11 +94,6 @@ namespace drop::platform
 
     Window::~Window()
     {
-        if (_pGraphics)
-        {
-            delete _pGraphics;
-        }
-
         DestroyWindow(_hwnd);
     }
 

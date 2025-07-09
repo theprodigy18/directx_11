@@ -7,6 +7,7 @@
 
 #include <Windows.h>
 #include <optional>
+#include <memory>
 
 namespace drop::platform
 {
@@ -75,10 +76,10 @@ namespace drop::platform
         static LRESULT CALLBACK HandleMsgThunk(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
         LRESULT                 HandleMsg(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
 
-        i32                 _width {0};
-        i32                 _height {0};
-        HWND                _hwnd {nullptr};
-        graphics::Graphics* _pGraphics {nullptr};
+        i32                                 _width {0};
+        i32                                 _height {0};
+        HWND                                _hwnd {nullptr};
+        std::unique_ptr<graphics::Graphics> _pGraphics {nullptr};
     };
 
 } // namespace drop::platform

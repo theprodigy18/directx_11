@@ -4,6 +4,7 @@
 #include "dx_helper/dxgi_info_manager.hpp"
 
 #include <Windows.h>
+#include <wrl.h>
 #include <d3d11.h>
 
 namespace drop::graphics
@@ -30,6 +31,17 @@ namespace drop::graphics
             HRESULT     _hr;
             std::string _info;
         };
+        class InfoException : public Exception
+        {
+        public:
+            InfoException(i32 line, const char* file, std::vector<std::string> infoMsgs = {}) noexcept;
+            const char* what() const noexcept override;
+            const char* GetType() const noexcept override;
+            std::string GetErrorInfo() const noexcept;
+
+        private:
+            std::string _info;
+        };
         class DeviceRemovedException : public HrException
         {
             using HrException::HrException;
@@ -45,7 +57,7 @@ namespace drop::graphics
         Graphics(HWND handle);
         Graphics(const Graphics&)            = delete; // Copy Constructor.
         Graphics& operator=(const Graphics&) = delete; // Copy Assignment Operator.
-        ~Graphics();
+        ~Graphics()                          = default;
 
 #ifdef _DEBUG
         dxhelper::DxgiInfoManager _dxgiInfoManager;
@@ -53,11 +65,12 @@ namespace drop::graphics
         void BeginFrame();
         void EndFrame();
         void ClearBuffer(f32 r, f32 g, f32 b) noexcept;
+        void DrawTestTriangle();
 
     private:
-        ID3D11Device*           _pDevice {nullptr};
-        IDXGISwapChain*         _pSwapChain {nullptr};
-        ID3D11DeviceContext*    _pContext {nullptr};
-        ID3D11RenderTargetView* _pTargetView {nullptr};
+        Microsoft::WRL::ComPtr<ID3D11Device>           _pDevice {nullptr};
+        Microsoft::WRL::ComPtr<IDXGISwapChain>         _pSwapChain {nullptr};
+        Microsoft::WRL::ComPtr<ID3D11DeviceContext>    _pContext {nullptr};
+        Microsoft::WRL::ComPtr<ID3D11RenderTargetView> _pTargetView {nullptr};
     };
 } // namespace drop::graphics

@@ -36,15 +36,7 @@ namespace drop::dxhelper
         HRESULT hr {0};
         GFX_THROW_NOINFO(DxgiGetDebugInterface(
             __uuidof(IDXGIInfoQueue),
-            reinterpret_cast<void**>(&_pDxgiInfoQueue)));
-    }
-
-    DxgiInfoManager::~DxgiInfoManager()
-    {
-        if (_pDxgiInfoQueue)
-        {
-            _pDxgiInfoQueue->Release();
-        }
+            &_pDxgiInfoQueue));
     }
 
     void DxgiInfoManager::Set() noexcept

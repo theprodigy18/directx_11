@@ -1,7 +1,9 @@
 #include "graphics/graphics.hpp"
 
 #include "dxerr/dxerr.h"
+
 #include <sstream>
+#include <d3dcompiler.h>
 
 // Graphics exception checking/throwing macros (some with dxgi infos).
 #define GFX_EXCEPT_NOINFO(hr) drop::graphics::Graphics::HrException(__LINE__, __FILE__, (hr))
@@ -15,11 +17,22 @@
     if (FAILED(hr = (hrcall))) throw GFX_EXCEPT(hr)
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) \
     drop::graphics::Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr), _dxgiInfoManager.GetMessages())
+#define GFX_THROW_INFO_ONLY(call)                                                 \
+    _dxgiInfoManager.Set();                                                       \
+    (call);                                                                       \
+    {                                                                             \
+        auto v {_dxgiInfoManager.GetMessages()};                                  \
+        if (!v.empty())                                                           \
+            throw drop::graphics::Graphics::InfoException(__LINE__, __FILE__, v); \
+    }
 #else
 #define GFX_EXCEPT(hr) drop::graphics::Graphics::HrException(__LINE__, __FILE__, (hr))
 #define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) drop::graphics::Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr))
+#define GFX_THROW_INFO_ONLY(call) (call)
 #endif
+
+namespace wrl = Microsoft::WRL;
 
 namespace drop::graphics
 {
@@ -64,39 +77,15 @@ namespace drop::graphics
             nullptr,
             &_pContext));
 
-        ID3D11Resource* _pBackBuffer {nullptr};
+        wrl::ComPtr<ID3D11Resource> _pBackBuffer {nullptr};
         GFX_THROW_INFO(_pSwapChain->GetBuffer(
             0,
             __uuidof(ID3D11Resource),
-            reinterpret_cast<void**>(&_pBackBuffer)));
+            &_pBackBuffer));
         GFX_THROW_INFO(_pDevice->CreateRenderTargetView(
-            _pBackBuffer,
+            _pBackBuffer.Get(),
             nullptr,
             &_pTargetView));
-
-        _pBackBuffer->Release();
-    }
-
-    Graphics::~Graphics()
-    {
-        if (_pTargetView)
-        {
-            _pTargetView->Release();
-        }
-        if (_pContext)
-        {
-            _pContext->Release();
-        }
-
-        if (_pSwapChain)
-        {
-            _pSwapChain->Release();
-        }
-
-        if (_pDevice)
-        {
-            _pDevice->Release();
-        }
     }
 
     void Graphics::BeginFrame()
@@ -130,7 +119,120 @@ namespace drop::graphics
             b,
             1.0f};
 
-        _pContext->ClearRenderTargetView(_pTargetView, color);
+        _pContext->ClearRenderTargetView(_pTargetView.Get(), color);
+    }
+
+    void Graphics::DrawTestTriangle()
+    {
+        HRESULT hr {};
+
+        struct Vertex
+        {
+            f32 x {0.0f};
+            f32 y {0.0f};
+        };
+
+        const Vertex vertices[] {
+            {0.0f, 0.5f},
+            {0.5f, -0.5f},
+            {-0.5f, -0.5f}};
+
+        // Create vertex buffer.
+        wrl::ComPtr<ID3D11Buffer> pVertexBuffer {nullptr};
+
+        D3D11_BUFFER_DESC bd {};
+        bd.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+        bd.Usage               = D3D11_USAGE_DEFAULT;
+        bd.CPUAccessFlags      = 0;
+        bd.MiscFlags           = 0;
+        bd.ByteWidth           = sizeof(vertices);
+        bd.StructureByteStride = sizeof(Vertex);
+
+        D3D11_SUBRESOURCE_DATA sd {};
+        sd.pSysMem = vertices;
+
+        GFX_THROW_INFO(_pDevice->CreateBuffer(
+            &bd,
+            &sd,
+            &pVertexBuffer));
+
+        // Bind vertex buffer to pipeline.
+        const UINT stride {sizeof(Vertex)};
+        const UINT offset {0};
+        _pContext->IASetVertexBuffers(
+            0, 1,
+            pVertexBuffer.GetAddressOf(),
+            &stride, &offset);
+
+        // Create a pixel shader.
+        wrl::ComPtr<ID3D11PixelShader> pPixelShader {nullptr};
+        wrl::ComPtr<ID3DBlob>          pBlob {nullptr};
+
+        GFX_THROW_INFO(D3DReadFileToBlob(L"pixel_shader.cso", &pBlob));
+        GFX_THROW_INFO(_pDevice->CreatePixelShader(
+            pBlob->GetBufferPointer(),
+            pBlob->GetBufferSize(),
+            nullptr,
+            &pPixelShader));
+
+        // Bind pixel shader.
+        _pContext->PSSetShader(pPixelShader.Get(), nullptr, 0);
+
+        // Create a vertex shader.
+        wrl::ComPtr<ID3D11VertexShader> pVertexShader {nullptr};
+
+        GFX_THROW_INFO(D3DReadFileToBlob(L"vertex_shader.cso", &pBlob));
+        GFX_THROW_INFO(_pDevice->CreateVertexShader(
+            pBlob->GetBufferPointer(),
+            pBlob->GetBufferSize(),
+            nullptr,
+            &pVertexShader));
+
+        // Bind vertex shader.
+        _pContext->VSSetShader(pVertexShader.Get(), nullptr, 0);
+
+        // Input layout(vertex) (2d position only).
+        wrl::ComPtr<ID3D11InputLayout> pInputLayout {nullptr};
+        const D3D11_INPUT_ELEMENT_DESC ied[] {
+            {"Position",
+             0,
+             DXGI_FORMAT_R32G32_FLOAT,
+             0,
+             0,
+             D3D11_INPUT_PER_VERTEX_DATA,
+             0}};
+
+        GFX_THROW_INFO(_pDevice->CreateInputLayout(
+            ied,
+            (UINT) std::size(ied),
+            pBlob->GetBufferPointer(),
+            pBlob->GetBufferSize(),
+            &pInputLayout));
+
+        // Bind vertex layout.
+        _pContext->IASetInputLayout(pInputLayout.Get());
+
+        // Bind render target.
+        _pContext->OMSetRenderTargets(
+            1,
+            _pTargetView.GetAddressOf(),
+            nullptr);
+
+        // Set primitive topology.
+        _pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        // Configure viewport.
+        D3D11_VIEWPORT vp {};
+        vp.Width    = 1600;
+        vp.Height   = 900;
+        vp.MinDepth = 0;
+        vp.MaxDepth = 1;
+        vp.TopLeftX = 0;
+        vp.TopLeftY = 0;
+        _pContext->RSSetViewports(1, &vp);
+
+        // Draw.
+        GFX_THROW_INFO_ONLY(_pContext->Draw((UINT) std::size(vertices), 0));
     }
 
     // Exception.
@@ -193,6 +295,45 @@ namespace drop::graphics
     }
 
     std::string Graphics::HrException::GetErrorInfo() const noexcept
+    {
+        return _info;
+    }
+
+    Graphics::InfoException::InfoException(i32 line, const char* file, std::vector<std::string> infoMsgs) noexcept
+        : Graphics::Exception {line, file}
+    {
+        // Join all info messages with newlines into single string.
+        for (const auto& m : infoMsgs)
+        {
+            _info += m;
+            _info.push_back('\n');
+        }
+        // Remove final newline if exists.
+        if (!_info.empty())
+        {
+            _info.pop_back();
+        }
+    }
+
+    const char* Graphics::InfoException::what() const noexcept
+    {
+        std::ostringstream oss;
+        oss << GetType() << std::endl
+            << "\n[Error Info]\n"
+            << GetErrorInfo() << std::endl
+            << std::endl
+            << GetOriginString();
+
+        _whatBuffer = oss.str();
+        return _whatBuffer.c_str();
+    }
+
+    const char* Graphics::InfoException::GetType() const noexcept
+    {
+        return "Drop Graphics Info Exception";
+    }
+
+    std::string Graphics::InfoException::GetErrorInfo() const noexcept
     {
         return _info;
     }
