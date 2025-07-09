@@ -19,9 +19,9 @@ namespace drop::platform
         wc.style         = CS_OWNDC;
         wc.cbClsExtra    = 0;
         wc.cbWndExtra    = 0;
-        wc.hCursor       = static_cast<HCURSOR>(LoadImageA(_hInst, MAKEINTRESOURCEA(IDC_POINTER), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE));
-        wc.hIcon         = static_cast<HICON>(LoadImageA(_hInst, MAKEINTRESOURCEA(IDI_ICON), IMAGE_ICON, 32, 32, 0));
-        wc.hIconSm       = static_cast<HICON>(LoadImageA(_hInst, MAKEINTRESOURCEA(IDI_ICON), IMAGE_ICON, 16, 16, 0));
+        wc.hCursor       = static_cast<HCURSOR>(LoadImageA(_hInst, MAKEINTRESOURCEA(IDC_DROP_ARROW), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE));
+        wc.hIcon         = static_cast<HICON>(LoadImageA(_hInst, MAKEINTRESOURCEA(IDI_DROP_ICON), IMAGE_ICON, 32, 32, 0));
+        wc.hIconSm       = static_cast<HICON>(LoadImageA(_hInst, MAKEINTRESOURCEA(IDI_DROP_ICON), IMAGE_ICON, 16, 16, 0));
         wc.hbrBackground = nullptr;
         wc.lpszMenuName  = nullptr;
         wc.lpszClassName = GetName();
@@ -57,7 +57,7 @@ namespace drop::platform
         RECT rc {0, 0, width, height};
         if (!AdjustWindowRectEx(&rc, dwStyle, FALSE, 0))
         {
-            throw CHWND_LAST_EXCEPT();
+            throw HWND_LAST_EXCEPT();
         }
         i32 normWidth {rc.right - rc.left};
         i32 normHeight {rc.bottom - rc.top};
@@ -82,11 +82,11 @@ namespace drop::platform
 
         if (!_hwnd)
         {
-            throw CHWND_LAST_EXCEPT();
+            throw HWND_LAST_EXCEPT();
         }
 
         // Create graphics object.
-        _graphics = new graphics::Graphics(_hwnd);
+        _pGraphics = new graphics::Graphics(_hwnd);
 
         ShowWindow(_hwnd, SW_SHOW);
         UpdateWindow(_hwnd);
@@ -94,9 +94,9 @@ namespace drop::platform
 
     Window::~Window()
     {
-        if (_graphics)
+        if (_pGraphics)
         {
-            delete _graphics;
+            delete _pGraphics;
         }
 
         DestroyWindow(_hwnd);
@@ -106,11 +106,11 @@ namespace drop::platform
     {
         if (!SetWindowTextA(_hwnd, title))
         {
-            throw CHWND_LAST_EXCEPT();
+            throw HWND_LAST_EXCEPT();
         }
     }
 
-    std::optional<i32> Window::ProcessMessages()
+    std::optional<i32> Window::ProcessMessages() noexcept
     {
         MSG msg {};
         while (PeekMessageA(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -129,7 +129,11 @@ namespace drop::platform
 
     graphics::Graphics& Window::GetGraphics()
     {
-        return *_graphics;
+        if (!_pGraphics)
+        {
+            throw HWND_NOGFX_EXCEPT();
+        }
+        return *_pGraphics;
     }
 
     LRESULT CALLBACK Window::HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept
@@ -265,30 +269,31 @@ namespace drop::platform
     }
 
     // Window exception.
-    Window::Exception::Exception(i32 line, const char* file, HRESULT hr) noexcept
-        : DropException {line, file}, _hr {hr} { }
+    Window::HrException::HrException(i32 line, const char* file, HRESULT hr) noexcept
+        : Window::Exception {line, file}, _hr {hr} { }
 
-    const char* Window::Exception::what() const noexcept
+    const char* Window::HrException::what() const noexcept
     {
         std::ostringstream oss;
         oss << GetType() << std::endl
-            << "[Error Code] " << GetErrorCode() << std::endl
-            << "[Description] " << GetErrorString() << std::endl
+            << "[Error Code] 0x" << std::hex << std::uppercase << GetErrorCode()
+            << std::dec << " (" << (u32) GetErrorCode() << ")" << std::endl
+            << "[Description] " << GetErrorDescription() << std::endl
             << GetOriginString();
 
         _whatBuffer = oss.str();
         return _whatBuffer.c_str();
     }
 
-    const char* Window::Exception::GetType() const noexcept
+    const char* Window::HrException::GetType() const noexcept
     {
-        return "Drop Window Exception";
+        return "Drop Window Hr Exception";
     }
 
     std::string Window::Exception::TranslateErrorCode(HRESULT hr) noexcept
     {
-        char* pMsgBuf {nullptr};
-        DWORD nMsgLen {FormatMessageA(
+        char*       pMsgBuf {nullptr};
+        const DWORD nMsgLen {FormatMessageA(
             FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
                 FORMAT_MESSAGE_IGNORE_INSERTS,
             nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -304,13 +309,18 @@ namespace drop::platform
         return errorString;
     }
 
-    HRESULT Window::Exception::GetErrorCode() const noexcept
+    HRESULT Window::HrException::GetErrorCode() const noexcept
     {
         return _hr;
     }
 
-    std::string Window::Exception::GetErrorString() const noexcept
+    std::string Window::HrException::GetErrorDescription() const noexcept
     {
-        return TranslateErrorCode(_hr);
+        return Exception::TranslateErrorCode(_hr);
+    }
+
+    const char* Window::NoGraphicsException::GetType() const noexcept
+    {
+        return "Drop Window No Graphics Exception";
     }
 }

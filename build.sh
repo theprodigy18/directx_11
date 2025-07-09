@@ -23,14 +23,14 @@ fi
 COMPILER="clang++"
 TARGET="--target=x86_64-pc-windows-msvc"
 COMPILER_FLAGS="-std=c++17"
-INCLUDES="-Iinclude"
-LIBS="-luser32 -ldxgi -ld3d11"
-WARNINGS=""
+INCLUDES="-Iinclude -Ithird_party"
+LIBS="-luser32 -ldxgi -ld3d11 -ldxguid"
+WARNINGS="-Wno-c++11-narrowing"
 
 # Create build directory if it doesn't exist.
 mkdir -p $BUILD_DIR
 
-SOURCES="$(find src/ -name '*.cpp')"
+SOURCES="$(find src/ -name '*.cpp') third_party/dxerr/dxerr.cpp"
 
 FIRST_ARGS="$COMPILER $TARGET $DEBUG_FLAGS $OPTIM_FLAGS $COMPILER_FLAGS $RUNTIME_FLAGS $INCLUDES $WARNINGS"
 

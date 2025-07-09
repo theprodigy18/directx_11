@@ -1,9 +1,9 @@
 #pragma once
 
-#define IDI_ICON 101
-#define IDI_TEXT_ICON 102
+#define IDI_DROP_ICON 101
+#define IDI_DROP_TEXT_ICON 102
 
-#define IDC_POINTER 201
+#define IDC_DROP_ARROW 201
 
 // #ifdef APSTUDIO_INVOKED
 // #ifndef APSTUDIO_READONLY_SYMBOLS

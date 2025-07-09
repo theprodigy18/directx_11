@@ -15,16 +15,28 @@ namespace drop::platform
     public:
         class Exception : public utils::DropException
         {
+            using utils::DropException::DropException;
+
         public:
-            Exception(i32 line, const char* file, HRESULT hr) noexcept;
-            const char*        what() const noexcept override;
-            const char*        GetType() const noexcept override;
             static std::string TranslateErrorCode(HRESULT hr) noexcept;
-            HRESULT            GetErrorCode() const noexcept;
-            std::string        GetErrorString() const noexcept;
+        };
+        class HrException : public Exception
+        {
+        public:
+            HrException(i32 line, const char* file, HRESULT hr) noexcept;
+            const char* what() const noexcept override;
+            const char* GetType() const noexcept override;
+            HRESULT     GetErrorCode() const noexcept;
+            std::string GetErrorDescription() const noexcept;
 
         private:
             HRESULT _hr;
+        };
+        class NoGraphicsException : public Exception
+        {
+        public:
+            using Exception::Exception;
+            const char* GetType() const noexcept override;
         };
 
     private:
@@ -52,7 +64,7 @@ namespace drop::platform
         Window& operator=(const Window&) = delete; // Copy Assignment Operator.
 
         void                      SetTitle(const char* title);
-        static std::optional<i32> ProcessMessages();
+        static std::optional<i32> ProcessMessages() noexcept;
         graphics::Graphics&       GetGraphics();
 
         input::Keyboard keyboard;
@@ -66,10 +78,11 @@ namespace drop::platform
         i32                 _width {0};
         i32                 _height {0};
         HWND                _hwnd {nullptr};
-        graphics::Graphics* _graphics {nullptr};
+        graphics::Graphics* _pGraphics {nullptr};
     };
 
 } // namespace drop::platform
 
-#define CHWND_EXCEPT(hr) drop::platform::Window::Exception(__LINE__, __FILE__, hr)
-#define CHWND_LAST_EXCEPT() drop::platform::Window::Exception(__LINE__, __FILE__, GetLastError())
+#define HWND_EXCEPT(hr) drop::platform::Window::HrException(__LINE__, __FILE__, hr)
+#define HWND_LAST_EXCEPT() drop::platform::Window::HrException(__LINE__, __FILE__, GetLastError())
+#define HWND_NOGFX_EXCEPT() drop::platform::Window::NoGraphicsException(__LINE__, __FILE__);
