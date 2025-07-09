@@ -85,12 +85,20 @@ namespace drop::platform
             throw CHWND_LAST_EXCEPT();
         }
 
+        // Create graphics object.
+        _graphics = new graphics::Graphics(_hwnd);
+
         ShowWindow(_hwnd, SW_SHOW);
         UpdateWindow(_hwnd);
     }
 
     Window::~Window()
     {
+        if (_graphics)
+        {
+            delete _graphics;
+        }
+
         DestroyWindow(_hwnd);
     }
 
@@ -117,6 +125,11 @@ namespace drop::platform
         }
 
         return {};
+    }
+
+    graphics::Graphics& Window::GetGraphics()
+    {
+        return *_graphics;
     }
 
     LRESULT CALLBACK Window::HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept

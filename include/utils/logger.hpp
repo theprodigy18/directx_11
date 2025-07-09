@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdarg>
+#include <windows.h>
 
 #ifdef _DEBUG
 #define DEBUG_BREAK() __debugbreak()
@@ -35,17 +36,15 @@ enum TextColor
 namespace
 {
     // --- Internal Logging ---
-    inline void _LogVA(const char* prefix, const char* file, int line, TextColor color, const char* fmt, va_list args)
+    inline void _LogVA(const char* prefix, const char* file, int line, TextColor, const char* fmt, va_list args)
     {
-        static const char* colorCodes[TEXT_COLOR_COUNT] = {
-            "\x1b[30m", "\x1b[31m", "\x1b[32m", "\x1b[33m",
-            "\x1b[34m", "\x1b[35m", "\x1b[36m", "\x1b[37m",
-            "\x1b[90m", "\x1b[91m", "\x1b[92m", "\x1b[93m",
-            "\x1b[94m", "\x1b[95m", "\x1b[96m", "\x1b[97m"};
+        char msgBuffer[4096];
+        vsnprintf(msgBuffer, sizeof(msgBuffer), fmt, args);
 
-        char buffer[4096];
-        vsnprintf(buffer, sizeof(buffer), fmt, args);
-        printf("%s%s [%s:%d] %s\x1b[0m\n", colorCodes[color], prefix, file, line, buffer);
+        char finalBuffer[4608];
+        snprintf(finalBuffer, sizeof(finalBuffer), "%s [%s:%d] %s\n", prefix, file, line, msgBuffer);
+
+        OutputDebugStringA(finalBuffer);
     }
 
     inline void _Log(const char* prefix, const char* file, int line, TextColor color, const char* fmt, ...)
@@ -76,6 +75,5 @@ namespace
 #define D_TRACE(...)
 #define D_WARN(...)
 #define D_ERROR(...)
-#define D_LEAK(...)
 #define D_ASSERT(cond, ...)
 #endif // _DEBUG

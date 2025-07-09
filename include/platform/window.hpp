@@ -3,6 +3,7 @@
 #include "utils/drop_exception.hpp"
 #include "input/keyboard.hpp"
 #include "input/mouse.hpp"
+#include "graphics/graphics.hpp"
 
 #include <Windows.h>
 #include <optional>
@@ -52,6 +53,7 @@ namespace drop::platform
 
         void                      SetTitle(const char* title);
         static std::optional<i32> ProcessMessages();
+        graphics::Graphics&       GetGraphics();
 
         input::Keyboard keyboard;
         input::Mouse    mouse;
@@ -61,9 +63,10 @@ namespace drop::platform
         static LRESULT CALLBACK HandleMsgThunk(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
         LRESULT                 HandleMsg(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
 
-        i32  _width {0};
-        i32  _height {0};
-        HWND _hwnd {nullptr};
+        i32                 _width {0};
+        i32                 _height {0};
+        HWND                _hwnd {nullptr};
+        graphics::Graphics* _graphics {nullptr};
     };
 
 } // namespace drop::platform

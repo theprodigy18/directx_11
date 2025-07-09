@@ -1,8 +1,5 @@
 #include "core/engine.hpp"
 
-#include <iomanip>
-#include <sstream>
-
 namespace drop::core
 {
     Engine::Engine()
@@ -18,18 +15,15 @@ namespace drop::core
                 return *exitCode;
             }
 
-            // DoFrame();
+            DoFrame();
         }
     }
 
     void Engine::DoFrame()
     {
-        const f32 t {_timer.Peek()};
-
-        std::ostringstream oss;
-        oss << "Time elapsed: " << std::setprecision(1) << std::fixed << t << " seconds.";
-
-        _window.SetTitle(oss.str().c_str());
+        const f32 c {static_cast<f32>(sin(_timer.Peek()) / 2.0f + 0.5f)};
+        _window.GetGraphics().ClearBuffer(c, c, 1.0f);
+        _window.GetGraphics().EndFrame();
     }
 
 } // namespace drop::core

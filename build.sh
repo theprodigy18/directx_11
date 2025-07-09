@@ -24,9 +24,8 @@ COMPILER="clang++"
 TARGET="--target=x86_64-pc-windows-msvc"
 COMPILER_FLAGS="-std=c++17"
 INCLUDES="-Iinclude"
-LIBS="-luser32"
+LIBS="-luser32 -ldxgi -ld3d11"
 WARNINGS=""
-# LINKER_FLAGS="/link /subsystem:windows"
 
 # Create build directory if it doesn't exist.
 mkdir -p $BUILD_DIR
