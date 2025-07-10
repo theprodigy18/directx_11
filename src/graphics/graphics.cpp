@@ -128,32 +128,46 @@ namespace drop::graphics
 
         struct Vertex
         {
-            f32 x {0.0f};
-            f32 y {0.0f};
+            struct
+            {
+                f32 x {0.0f};
+                f32 y {0.0f};
+            } pos;
+            struct
+            {
+                u8 r {0};
+                u8 g {0};
+                u8 b {0};
+                u8 a {0};
+            } color;
         };
 
         const Vertex vertices[] {
-            {0.0f, 0.5f},
-            {0.5f, -0.5f},
-            {-0.5f, -0.5f}};
+            {0.0f, 0.5f, 255, 0, 0, 0},
+            {0.5f, -0.5f, 0, 255, 0, 0},
+            {-0.5f, -0.5f, 0, 0, 255, 0},
+            {-0.3f, 0.3f, 0, 255, 0, 0},
+            {0.3f, 0.3f, 0, 0, 255, 0},
+            {0.0f, -0.8f, 255, 0, 0, 0},
+        };
 
         // Create vertex buffer.
         wrl::ComPtr<ID3D11Buffer> pVertexBuffer {nullptr};
 
-        D3D11_BUFFER_DESC bd {};
-        bd.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
-        bd.Usage               = D3D11_USAGE_DEFAULT;
-        bd.CPUAccessFlags      = 0;
-        bd.MiscFlags           = 0;
-        bd.ByteWidth           = sizeof(vertices);
-        bd.StructureByteStride = sizeof(Vertex);
+        D3D11_BUFFER_DESC vbd {};
+        vbd.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+        vbd.Usage               = D3D11_USAGE_DEFAULT;
+        vbd.CPUAccessFlags      = 0;
+        vbd.MiscFlags           = 0;
+        vbd.ByteWidth           = sizeof(vertices);
+        vbd.StructureByteStride = sizeof(Vertex);
 
-        D3D11_SUBRESOURCE_DATA sd {};
-        sd.pSysMem = vertices;
+        D3D11_SUBRESOURCE_DATA vsd {};
+        vsd.pSysMem = vertices;
 
         GFX_THROW_INFO(_pDevice->CreateBuffer(
-            &bd,
-            &sd,
+            &vbd,
+            &vsd,
             &pVertexBuffer));
 
         // Bind vertex buffer to pipeline.
@@ -164,11 +178,41 @@ namespace drop::graphics
             pVertexBuffer.GetAddressOf(),
             &stride, &offset);
 
+        // Create index buffer.
+        const u16 indices[] {
+            0, 1, 2,
+            0, 2, 3,
+            0, 4, 1,
+            2, 1, 5};
+
+        wrl::ComPtr<ID3D11Buffer> pIndexBuffer {nullptr};
+        D3D11_BUFFER_DESC         ibd {};
+        ibd.BindFlags           = D3D11_BIND_INDEX_BUFFER;
+        ibd.Usage               = D3D11_USAGE_DEFAULT;
+        ibd.CPUAccessFlags      = 0;
+        ibd.MiscFlags           = 0;
+        ibd.ByteWidth           = sizeof(indices);
+        ibd.StructureByteStride = sizeof(u16);
+
+        D3D11_SUBRESOURCE_DATA isd {};
+        isd.pSysMem = indices;
+
+        GFX_THROW_INFO(_pDevice->CreateBuffer(
+            &ibd,
+            &isd,
+            &pIndexBuffer));
+
+        // Bind index buffer.
+        _pContext->IASetIndexBuffer(
+            pIndexBuffer.Get(),
+            DXGI_FORMAT_R16_UINT,
+            0);
+
         // Create a pixel shader.
         wrl::ComPtr<ID3D11PixelShader> pPixelShader {nullptr};
         wrl::ComPtr<ID3DBlob>          pBlob {nullptr};
 
-        GFX_THROW_INFO(D3DReadFileToBlob(L"pixel_shader.cso", &pBlob));
+        GFX_THROW_INFO(D3DReadFileToBlob(L"basic_shader_ps.cso", &pBlob));
         GFX_THROW_INFO(_pDevice->CreatePixelShader(
             pBlob->GetBufferPointer(),
             pBlob->GetBufferSize(),
@@ -181,7 +225,7 @@ namespace drop::graphics
         // Create a vertex shader.
         wrl::ComPtr<ID3D11VertexShader> pVertexShader {nullptr};
 
-        GFX_THROW_INFO(D3DReadFileToBlob(L"vertex_shader.cso", &pBlob));
+        GFX_THROW_INFO(D3DReadFileToBlob(L"basic_shader_vs.cso", &pBlob));
         GFX_THROW_INFO(_pDevice->CreateVertexShader(
             pBlob->GetBufferPointer(),
             pBlob->GetBufferSize(),
@@ -199,6 +243,13 @@ namespace drop::graphics
              DXGI_FORMAT_R32G32_FLOAT,
              0,
              0,
+             D3D11_INPUT_PER_VERTEX_DATA,
+             0},
+            {"Color",
+             0,
+             DXGI_FORMAT_R8G8B8A8_UNORM,
+             0,
+             8,
              D3D11_INPUT_PER_VERTEX_DATA,
              0}};
 
@@ -232,7 +283,7 @@ namespace drop::graphics
         _pContext->RSSetViewports(1, &vp);
 
         // Draw.
-        GFX_THROW_INFO_ONLY(_pContext->Draw((UINT) std::size(vertices), 0));
+        GFX_THROW_INFO_ONLY(_pContext->DrawIndexed((UINT) std::size(indices), 0, 0));
     }
 
     // Exception.

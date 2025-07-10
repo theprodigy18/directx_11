@@ -24,9 +24,9 @@
             }
         },
         {
-            "label": "Build resources x64-debug",
+            "label": "Build resources",
             "type": "shell",
-            "command": "sh build_resources.sh debug",
+            "command": "sh build_resources.sh",
             "problemMatcher": [],
             "args": [],
             "group": {
@@ -35,9 +35,9 @@
             }
         },
         {
-            "label": "Build resources x64-release",
+            "label": "Build PCH file",
             "type": "shell",
-            "command": "sh build_resources.sh release",
+            "command": "sh build_pch.sh",
             "problemMatcher": [],
             "args": [],
             "group": {
@@ -46,20 +46,9 @@
             }
         },
         {
-            "label": "Build pch x64-debug",
+            "label": "Generate compile_commands.json",
             "type": "shell",
-            "command": "sh build_pch.sh debug",
-            "problemMatcher": [],
-            "args": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            }
-        },
-        {
-            "label": "Build pch x64-release",
-            "type": "shell",
-            "command": "sh build_pch.sh release",
+            "command": "sh generate_cc.sh",
             "problemMatcher": [],
             "args": [],
             "group": {
