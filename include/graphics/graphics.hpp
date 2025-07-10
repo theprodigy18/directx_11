@@ -65,7 +65,7 @@ namespace drop::graphics
         void BeginFrame();
         void EndFrame();
         void ClearBuffer(f32 r, f32 g, f32 b) noexcept;
-        void DrawTestTriangle();
+        void DrawTestTriangle(f32 angle, f32 x, f32 y);
 
     private:
         Microsoft::WRL::ComPtr<ID3D11Device>           _pDevice {nullptr};

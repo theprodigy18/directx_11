@@ -23,7 +23,9 @@ namespace drop::core
     {
         const f32 c {static_cast<f32>(sin(_timer.Peek()) / 2.0f + 0.5f)};
         _window.GetGraphics().ClearBuffer(c, c, 1.0f);
-        _window.GetGraphics().DrawTestTriangle();
+        _window.GetGraphics().DrawTestTriangle(_timer.Peek(),
+                                               _window.mouse.GetX() / 800.0f - 1.0f,
+                                               -_window.mouse.GetY() / 450.0f + 1.0f);
         _window.GetGraphics().EndFrame();
     }
 

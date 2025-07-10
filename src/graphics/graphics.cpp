@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <d3dcompiler.h>
+#include <DirectXMath.h>
 
 // Graphics exception checking/throwing macros (some with dxgi infos).
 #define GFX_EXCEPT_NOINFO(hr) drop::graphics::Graphics::HrException(__LINE__, __FILE__, (hr))
@@ -33,6 +34,7 @@
 #endif
 
 namespace wrl = Microsoft::WRL;
+namespace dx  = DirectX;
 
 namespace drop::graphics
 {
@@ -122,7 +124,7 @@ namespace drop::graphics
         _pContext->ClearRenderTargetView(_pTargetView.Get(), color);
     }
 
-    void Graphics::DrawTestTriangle()
+    void Graphics::DrawTestTriangle(f32 angle, f32 x, f32 y)
     {
         HRESULT hr {};
 
@@ -148,7 +150,7 @@ namespace drop::graphics
             {-0.5f, -0.5f, 0, 0, 255, 0},
             {-0.3f, 0.3f, 0, 255, 0, 0},
             {0.3f, 0.3f, 0, 0, 255, 0},
-            {0.0f, -0.8f, 255, 0, 0, 0},
+            {0.0f, -1.0f, 255, 0, 0, 0},
         };
 
         // Create vertex buffer.
@@ -207,6 +209,41 @@ namespace drop::graphics
             pIndexBuffer.Get(),
             DXGI_FORMAT_R16_UINT,
             0);
+
+        // Create constant buffer for transformation matrix.
+        struct ConstantBuffer
+        {
+            dx::XMMATRIX transform;
+        };
+
+        const ConstantBuffer cb[] {
+            {dx::XMMatrixTranspose(
+                dx::XMMatrixRotationZ(angle) *
+                dx::XMMatrixScaling(9.0f / 16.0f, 1.0f, 1.0f) *
+                dx::XMMatrixTranslation(x, y, 0.0f))},
+        };
+
+        wrl::ComPtr<ID3D11Buffer> pConstantBuffer {nullptr};
+        D3D11_BUFFER_DESC         cbd {};
+        cbd.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+        cbd.Usage               = D3D11_USAGE_DYNAMIC;
+        cbd.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+        cbd.MiscFlags           = 0;
+        cbd.ByteWidth           = sizeof(cb);
+        cbd.StructureByteStride = 0;
+
+        D3D11_SUBRESOURCE_DATA csd {};
+        csd.pSysMem = cb;
+
+        GFX_THROW_INFO(_pDevice->CreateBuffer(
+            &cbd,
+            &csd,
+            &pConstantBuffer));
+
+        // Bind constant buffer.
+        _pContext->VSSetConstantBuffers(
+            0, 1,
+            pConstantBuffer.GetAddressOf());
 
         // Create a pixel shader.
         wrl::ComPtr<ID3D11PixelShader> pPixelShader {nullptr};
