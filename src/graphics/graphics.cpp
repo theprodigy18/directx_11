@@ -88,6 +88,57 @@ namespace drop::graphics
             _pBackBuffer.Get(),
             nullptr,
             &_pTargetView));
+
+        // Create depth stencil state.
+        D3D11_DEPTH_STENCIL_DESC dsd {};
+        dsd.DepthEnable    = TRUE;
+        dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+        dsd.DepthFunc      = D3D11_COMPARISON_LESS;
+
+        wrl::ComPtr<ID3D11DepthStencilState> pDepthStencilState {nullptr};
+        GFX_THROW_INFO(_pDevice->CreateDepthStencilState(
+            &dsd,
+            &pDepthStencilState));
+
+        // Bind depth stencil to output.
+        _pContext->OMSetDepthStencilState(
+            pDepthStencilState.Get(),
+            1);
+
+        // Create depth stencil texture.
+        wrl::ComPtr<ID3D11Texture2D> pDepthStencil {nullptr};
+        D3D11_TEXTURE2D_DESC         descDepth {};
+        descDepth.Width              = 1600;
+        descDepth.Height             = 900;
+        descDepth.MipLevels          = 1;
+        descDepth.ArraySize          = 1;
+        descDepth.Format             = DXGI_FORMAT_D32_FLOAT;
+        descDepth.SampleDesc.Count   = 1;
+        descDepth.SampleDesc.Quality = 0;
+        descDepth.Usage              = D3D11_USAGE_DEFAULT;
+        descDepth.BindFlags          = D3D11_BIND_DEPTH_STENCIL;
+
+        GFX_THROW_INFO(_pDevice->CreateTexture2D(
+            &descDepth,
+            nullptr,
+            &pDepthStencil));
+
+        // Create view of the depth stencil texture.
+        D3D11_DEPTH_STENCIL_VIEW_DESC descDSV {};
+        descDSV.Format             = DXGI_FORMAT_D32_FLOAT;
+        descDSV.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+        descDSV.Texture2D.MipSlice = 0;
+
+        GFX_THROW_INFO(_pDevice->CreateDepthStencilView(
+            pDepthStencil.Get(),
+            &descDSV,
+            &_pDepthStencilView));
+
+        // Bind the view to the pipeline.
+        _pContext->OMSetRenderTargets(
+            1,
+            _pTargetView.GetAddressOf(),
+            _pDepthStencilView.Get());
     }
 
     void Graphics::BeginFrame()
@@ -122,9 +173,13 @@ namespace drop::graphics
             1.0f};
 
         _pContext->ClearRenderTargetView(_pTargetView.Get(), color);
+        _pContext->ClearDepthStencilView(
+            _pDepthStencilView.Get(),
+            D3D11_CLEAR_DEPTH,
+            1.0f, 0);
     }
 
-    void Graphics::DrawTestTriangle(f32 angle, f32 x, f32 y)
+    void Graphics::DrawTestTriangle(f32 angle, f32 x, f32 z)
     {
         HRESULT hr {};
 
@@ -134,23 +189,19 @@ namespace drop::graphics
             {
                 f32 x {0.0f};
                 f32 y {0.0f};
+                f32 z {0.0f};
             } pos;
-            struct
-            {
-                u8 r {0};
-                u8 g {0};
-                u8 b {0};
-                u8 a {0};
-            } color;
         };
 
         const Vertex vertices[] {
-            {0.0f, 0.5f, 255, 0, 0, 0},
-            {0.5f, -0.5f, 0, 255, 0, 0},
-            {-0.5f, -0.5f, 0, 0, 255, 0},
-            {-0.3f, 0.3f, 0, 255, 0, 0},
-            {0.3f, 0.3f, 0, 0, 255, 0},
-            {0.0f, -1.0f, 255, 0, 0, 0},
+            {-1.0f, -1.0f, -1.0f},
+            {1.0f, -1.0f, -1.0f},
+            {-1.0f, 1.0f, -1.0f},
+            {1.0f, 1.0f, -1.0f},
+            {-1.0f, -1.0f, 1.0f},
+            {1.0f, -1.0f, 1.0f},
+            {-1.0f, 1.0f, 1.0f},
+            {1.0f, 1.0f, 1.0f},
         };
 
         // Create vertex buffer.
@@ -182,10 +233,12 @@ namespace drop::graphics
 
         // Create index buffer.
         const u16 indices[] {
-            0, 1, 2,
-            0, 2, 3,
-            0, 4, 1,
-            2, 1, 5};
+            0, 2, 1, 2, 3, 1,
+            1, 3, 5, 3, 7, 5,
+            2, 6, 3, 3, 6, 7,
+            4, 5, 7, 4, 7, 6,
+            0, 4, 2, 2, 4, 6,
+            0, 1, 4, 1, 5, 4};
 
         wrl::ComPtr<ID3D11Buffer> pIndexBuffer {nullptr};
         D3D11_BUFFER_DESC         ibd {};
@@ -219,8 +272,9 @@ namespace drop::graphics
         const ConstantBuffer cb[] {
             {dx::XMMatrixTranspose(
                 dx::XMMatrixRotationZ(angle) *
-                dx::XMMatrixScaling(9.0f / 16.0f, 1.0f, 1.0f) *
-                dx::XMMatrixTranslation(x, y, 0.0f))},
+                dx::XMMatrixRotationX(angle) *
+                dx::XMMatrixTranslation(x, 0.0f, z + 4.0f) *
+                dx::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.5f, 10.0f))},
         };
 
         wrl::ComPtr<ID3D11Buffer> pConstantBuffer {nullptr};
@@ -245,9 +299,51 @@ namespace drop::graphics
             0, 1,
             pConstantBuffer.GetAddressOf());
 
+        struct ConstantBuffer2
+        {
+            struct
+            {
+                f32 r, g, b, a;
+            } faceColor[6];
+        };
+
+        const ConstantBuffer2 cb2[] {
+            {
+                {{1.0f, 0.0f, 1.0f},
+                 {1.0f, 0.0f, 0.0f},
+                 {0.0f, 1.0f, 0.0f},
+                 {0.0f, 0.0f, 1.0f},
+                 {1.0f, 1.0f, 0.0f},
+                 {0.0f, 1.0f, 1.0f}},
+            }};
+
+        wrl::ComPtr<ID3D11Buffer> pConstantBuffer2 {nullptr};
+        D3D11_BUFFER_DESC         cbd2 {};
+        cbd2.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+        cbd2.Usage               = D3D11_USAGE_DEFAULT;
+        cbd2.CPUAccessFlags      = 0;
+        cbd2.MiscFlags           = 0;
+        cbd2.ByteWidth           = sizeof(cb2);
+        cbd2.StructureByteStride = 0;
+
+        D3D11_SUBRESOURCE_DATA csd2 {};
+        csd2.pSysMem = cb2;
+
+        GFX_THROW_INFO(_pDevice->CreateBuffer(
+            &cbd2,
+            &csd2,
+            &pConstantBuffer2));
+
+        // Bind constant buffer.
+        _pContext->PSSetConstantBuffers(
+            0,
+            1,
+            pConstantBuffer2.GetAddressOf());
+
         // Create a pixel shader.
-        wrl::ComPtr<ID3D11PixelShader> pPixelShader {nullptr};
-        wrl::ComPtr<ID3DBlob>          pBlob {nullptr};
+        wrl::ComPtr<ID3D11PixelShader>
+                              pPixelShader {nullptr};
+        wrl::ComPtr<ID3DBlob> pBlob {nullptr};
 
         GFX_THROW_INFO(D3DReadFileToBlob(L"basic_shader_ps.cso", &pBlob));
         GFX_THROW_INFO(_pDevice->CreatePixelShader(
@@ -277,18 +373,12 @@ namespace drop::graphics
         const D3D11_INPUT_ELEMENT_DESC ied[] {
             {"Position",
              0,
-             DXGI_FORMAT_R32G32_FLOAT,
+             DXGI_FORMAT_R32G32B32_FLOAT,
              0,
              0,
              D3D11_INPUT_PER_VERTEX_DATA,
              0},
-            {"Color",
-             0,
-             DXGI_FORMAT_R8G8B8A8_UNORM,
-             0,
-             8,
-             D3D11_INPUT_PER_VERTEX_DATA,
-             0}};
+        };
 
         GFX_THROW_INFO(_pDevice->CreateInputLayout(
             ied,
@@ -299,12 +389,6 @@ namespace drop::graphics
 
         // Bind vertex layout.
         _pContext->IASetInputLayout(pInputLayout.Get());
-
-        // Bind render target.
-        _pContext->OMSetRenderTargets(
-            1,
-            _pTargetView.GetAddressOf(),
-            nullptr);
 
         // Set primitive topology.
         _pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

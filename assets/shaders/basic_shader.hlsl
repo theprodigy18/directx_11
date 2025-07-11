@@ -1,25 +1,20 @@
-struct VSOut
-{
-    float3 color: Color;
-    float4 pos: SV_Position;
-};
-
 cbuffer Cbuffer
 {
     matrix transform;
 };
 
-VSOut VSMain(float2 pos: Position, float3 color: Color)
+float4 VSMain(float3 pos: Position): SV_Position
 {
-    VSOut vso;
-    vso.pos = mul(float4(pos, 0.0f, 1.0f), transform);
-    vso.color = color;
-
-    return vso;
+    return mul(float4(pos, 1.0f), transform);
 }
 
 
-float4 PSMain(float3 color: Color): SV_Target
+cbuffer Cbuffer2
 {
-    return float4(color, 1.0f);
+    float4 faceColor[6];
+}
+
+float4 PSMain(uint tID: SV_PrimitiveID): SV_Target
+{
+    return faceColor[tID / 2];
 }

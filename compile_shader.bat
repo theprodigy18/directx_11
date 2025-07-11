@@ -6,8 +6,8 @@ set SHADER_INPUT=assets\shaders
 set OUTPUT_DIRS=.\ build\x64-debug build\x64-release
 
 REM Shader model
-set VS_TARGET=vs_4_0_level_9_3
-set PS_TARGET=ps_4_0_level_9_3
+set VS_TARGET=vs_4_0
+set PS_TARGET=ps_4_0
 
 REM Create output directories if not exist
 for %%D in (%OUTPUT_DIRS%) do (

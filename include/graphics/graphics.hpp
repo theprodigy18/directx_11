@@ -65,12 +65,13 @@ namespace drop::graphics
         void BeginFrame();
         void EndFrame();
         void ClearBuffer(f32 r, f32 g, f32 b) noexcept;
-        void DrawTestTriangle(f32 angle, f32 x, f32 y);
+        void DrawTestTriangle(f32 angle, f32 x, f32 z);
 
     private:
         Microsoft::WRL::ComPtr<ID3D11Device>           _pDevice {nullptr};
         Microsoft::WRL::ComPtr<IDXGISwapChain>         _pSwapChain {nullptr};
         Microsoft::WRL::ComPtr<ID3D11DeviceContext>    _pContext {nullptr};
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView> _pTargetView {nullptr};
+        Microsoft::WRL::ComPtr<ID3D11DepthStencilView> _pDepthStencilView {nullptr};
     };
 } // namespace drop::graphics
