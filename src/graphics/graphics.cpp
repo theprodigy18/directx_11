@@ -3,35 +3,8 @@
 #include "dxerr/dxerr.h"
 
 #include <sstream>
-#include <d3dcompiler.h>
-#include <DirectXMath.h>
 
-// Graphics exception checking/throwing macros (some with dxgi infos).
-#define GFX_EXCEPT_NOINFO(hr) drop::graphics::Graphics::HrException(__LINE__, __FILE__, (hr))
-#define GFX_THROW_NOINFO(hrcall) \
-    if (FAILED(hr = (hrcall))) throw drop::graphics::Graphics::HrException(__LINE__, __FILE__, hr)
-
-#ifndef NDEBUG
-#define GFX_EXCEPT(hr) drop::graphics::Graphics::HrException(__LINE__, __FILE__, (hr), _dxgiInfoManager.GetMessages())
-#define GFX_THROW_INFO(hrcall) \
-    _dxgiInfoManager.Set();    \
-    if (FAILED(hr = (hrcall))) throw GFX_EXCEPT(hr)
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) \
-    drop::graphics::Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr), _dxgiInfoManager.GetMessages())
-#define GFX_THROW_INFO_ONLY(call)                                                 \
-    _dxgiInfoManager.Set();                                                       \
-    (call);                                                                       \
-    {                                                                             \
-        auto v {_dxgiInfoManager.GetMessages()};                                  \
-        if (!v.empty())                                                           \
-            throw drop::graphics::Graphics::InfoException(__LINE__, __FILE__, v); \
-    }
-#else
-#define GFX_EXCEPT(hr) drop::graphics::Graphics::HrException(__LINE__, __FILE__, (hr))
-#define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) drop::graphics::Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr))
-#define GFX_THROW_INFO_ONLY(call) (call)
-#endif
+#include "utils/graphics_throw_macros.hpp"
 
 namespace wrl = Microsoft::WRL;
 namespace dx  = DirectX;
@@ -179,6 +152,14 @@ namespace drop::graphics
             1.0f, 0);
     }
 
+    void Graphics::DrawIndexed(u32 count) noexcept(!_DEBUG)
+    {
+        GFX_THROW_INFO_ONLY(_pContext->DrawIndexed(
+            count,
+            0,
+            0));
+    }
+
     void Graphics::DrawTestTriangle(f32 angle, f32 x, f32 z)
     {
         HRESULT hr {};
@@ -273,6 +254,7 @@ namespace drop::graphics
             {dx::XMMatrixTranspose(
                 dx::XMMatrixRotationZ(angle) *
                 dx::XMMatrixRotationX(angle) *
+                dx::XMMatrixRotationY(angle) *
                 dx::XMMatrixTranslation(x, 0.0f, z + 4.0f) *
                 dx::XMMatrixPerspectiveLH(1.0f, 9.0f / 16.0f, 0.5f, 10.0f))},
         };
@@ -405,6 +387,16 @@ namespace drop::graphics
 
         // Draw.
         GFX_THROW_INFO_ONLY(_pContext->DrawIndexed((UINT) std::size(indices), 0, 0));
+    }
+
+    void Graphics::SetProjection(DirectX::FXMMATRIX proj) noexcept
+    {
+        projection = proj;
+    }
+
+    DirectX::XMMATRIX Graphics::GetProjection() const noexcept
+    {
+        return projection;
     }
 
     // Exception.

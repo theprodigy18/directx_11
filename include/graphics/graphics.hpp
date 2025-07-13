@@ -6,11 +6,20 @@
 #include <Windows.h>
 #include <wrl.h>
 #include <d3d11.h>
+#include <d3dcompiler.h>
+#include <DirectXMath.h>
+
+namespace drop::bindable
+{
+    class Bindable;
+} // namespace drop::bindable
 
 namespace drop::graphics
 {
     class Graphics
     {
+        friend class bindable::Bindable;
+
     public:
         class Exception : public utils::DropException
         {
@@ -59,15 +68,19 @@ namespace drop::graphics
         Graphics& operator=(const Graphics&) = delete; // Copy Assignment Operator.
         ~Graphics()                          = default;
 
+        void              BeginFrame();
+        void              EndFrame();
+        void              ClearBuffer(f32 r, f32 g, f32 b) noexcept;
+        void              DrawIndexed(u32 count) noexcept(!_DEBUG);
+        void              DrawTestTriangle(f32 angle, f32 x, f32 z);
+        void              SetProjection(DirectX::FXMMATRIX proj) noexcept;
+        DirectX::XMMATRIX GetProjection() const noexcept;
+
+    private:
+        DirectX::XMMATRIX projection;
 #ifdef _DEBUG
         dxhelper::DxgiInfoManager _dxgiInfoManager;
 #endif // _DEBUG
-        void BeginFrame();
-        void EndFrame();
-        void ClearBuffer(f32 r, f32 g, f32 b) noexcept;
-        void DrawTestTriangle(f32 angle, f32 x, f32 z);
-
-    private:
         Microsoft::WRL::ComPtr<ID3D11Device>           _pDevice {nullptr};
         Microsoft::WRL::ComPtr<IDXGISwapChain>         _pSwapChain {nullptr};
         Microsoft::WRL::ComPtr<ID3D11DeviceContext>    _pContext {nullptr};

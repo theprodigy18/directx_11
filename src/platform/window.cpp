@@ -3,6 +3,8 @@
 
 #include <sstream>
 
+#include "utils/windows_throw_macros.hpp"
+
 namespace drop::platform
 {
     // Window class singleton.

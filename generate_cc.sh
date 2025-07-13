@@ -8,7 +8,7 @@ COMPILER="clang++"
 TARGET="--target=x86_64-pc-windows-msvc"
 COMPILER_FLAGS="-std=c++17"
 INCLUDES="-Iinclude -Ithird_party"
-WARNINGS="-Wno-c++11-narrowing -Wno-writable-strings"
+WARNINGS="-Wno-c++11-narrowing -Wno-writable-strings -Wno-potentially-evaluated-expression"
 SOURCES="$(find src/ -name '*.cpp') third_party/dxerr/dxerr.cpp"
 PCH_HEADER="common/common_header.hpp"
 

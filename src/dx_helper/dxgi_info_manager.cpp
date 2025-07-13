@@ -1,15 +1,11 @@
 #include "dx_helper/dxgi_info_manager.hpp"
-#include "platform/window.hpp"
 #include "graphics/graphics.hpp" // IWYU pragma: keep
+#include "platform/window.hpp"   // IWYU pragma: keep
 
 #include <memory>
 
-#define GFX_THROW_NOINFO(hrcall)                                             \
-    if (FAILED(hr = hrcall))                                                 \
-    {                                                                        \
-                                                                             \
-        throw drop::graphics::Graphics::HrException(__LINE__, __FILE__, hr); \
-    }
+#include "utils/graphics_throw_macros.hpp"
+#include "utils/windows_throw_macros.hpp"
 
 namespace drop::dxhelper
 {
