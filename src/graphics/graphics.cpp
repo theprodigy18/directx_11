@@ -112,6 +112,16 @@ namespace drop::graphics
             1,
             _pTargetView.GetAddressOf(),
             _pDepthStencilView.Get());
+
+        // Configure viewport.
+        D3D11_VIEWPORT vp {};
+        vp.Width    = 1600.0f;
+        vp.Height   = 900.0f;
+        vp.MinDepth = 0.0f;
+        vp.MaxDepth = 1.0f;
+        vp.TopLeftX = 0.0f;
+        vp.TopLeftY = 0.0f;
+        _pContext->RSSetViewports(1u, &vp);
     }
 
     void Graphics::BeginFrame()
@@ -152,7 +162,7 @@ namespace drop::graphics
             1.0f, 0);
     }
 
-    void Graphics::DrawIndexed(u32 count) noexcept(!_DEBUG)
+    void Graphics::DrawIndexed(u32 count) noexcept(!IS_DEBUG)
     {
         GFX_THROW_INFO_ONLY(_pContext->DrawIndexed(
             count,

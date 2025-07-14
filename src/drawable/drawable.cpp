@@ -3,7 +3,7 @@
 
 namespace drop::drawable
 {
-    void Drawable::Draw(graphics::Graphics& gfx) const noexcept(!_DEBUG)
+    void Drawable::Draw(graphics::Graphics& gfx) const noexcept(!IS_DEBUG)
     {
         for (auto& b : _binds)
         {
@@ -12,7 +12,7 @@ namespace drop::drawable
         gfx.DrawIndexed(_pIndexBuffer->GetCount());
     }
 
-    void Drawable::AddBind(std::unique_ptr<bindable::Bindable> bind) noexcept(!_DEBUG)
+    void Drawable::AddBind(std::unique_ptr<bindable::Bindable> bind) noexcept(!IS_DEBUG)
     {
         D_ASSERT(typeid(*bind) != typeid(bindable::IndexBuffer), "IndexBuffer not allowed.");
         _binds.push_back(std::move(bind));

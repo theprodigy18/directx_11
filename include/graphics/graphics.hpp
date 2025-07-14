@@ -71,7 +71,7 @@ namespace drop::graphics
         void              BeginFrame();
         void              EndFrame();
         void              ClearBuffer(f32 r, f32 g, f32 b) noexcept;
-        void              DrawIndexed(u32 count) noexcept(!_DEBUG);
+        void              DrawIndexed(u32 count) noexcept(!IS_DEBUG);
         void              DrawTestTriangle(f32 angle, f32 x, f32 z);
         void              SetProjection(DirectX::FXMMATRIX proj) noexcept;
         DirectX::XMMATRIX GetProjection() const noexcept;

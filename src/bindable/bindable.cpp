@@ -1,5 +1,9 @@
 #include "bindable/bindable.hpp"
 
+#ifdef NDEBUG
+#include <stdexcept>
+#endif // NDEBUG
+
 namespace drop::bindable
 {
     ID3D11DeviceContext* Bindable::GetContext(graphics::Graphics& gfx) noexcept
@@ -12,7 +16,7 @@ namespace drop::bindable
         return gfx._pDevice.Get();
     }
 
-    dxhelper::DxgiInfoManager& Bindable::GetInfoManager(graphics::Graphics& gfx) noexcept(!_DEBUG)
+    dxhelper::DxgiInfoManager& Bindable::GetInfoManager(graphics::Graphics& gfx) noexcept(!IS_DEBUG)
     {
 #ifdef _DEBUG
         return gfx._dxgiInfoManager;

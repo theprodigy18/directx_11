@@ -14,7 +14,7 @@ namespace drop::bindable
     protected:
         static ID3D11DeviceContext*       GetContext(graphics::Graphics& gfx) noexcept;
         static ID3D11Device*              GetDevice(graphics::Graphics& gfx) noexcept;
-        static dxhelper::DxgiInfoManager& GetInfoManager(graphics::Graphics& gfx) noexcept(!_DEBUG);
+        static dxhelper::DxgiInfoManager& GetInfoManager(graphics::Graphics& gfx) noexcept(!IS_DEBUG);
     };
 
 } // namespace drop::graphics
